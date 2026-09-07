@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# DevEco / HarmonyOS
+.idea/
+.arkui-x/
+build/
+**/build/
+oh_modules/
+**/oh_modules/
+.hvigor/
+
+# Signing / secrets
+*.p12
+*.p7b
+*.cer
+*.pem
+*.key
+*.mobileprovision
+secrets.*
+.env
+.env.*
+
+# Logs
+*.log
