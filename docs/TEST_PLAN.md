@@ -184,3 +184,60 @@ P95 < 2 s
 - 不需要重新安装 App。
 - 不出现持续高 CPU。
 - 不把验证码明文写入日志文件。
+
+## 8. Phase 0.3：Bark 推送 Gate
+
+Phase 0.3 不再把 RFCOMM 作为 MVP 传输通道。蓝牙只负责激活 HarmonyOS 通知订阅；OTP 通过 HTTP 推送到自建 `bark-server`，再由 BarkMac 使用 `macos_sse` 接收。
+
+### Gate A：Bark Server
+
+```bash
+curl http://127.0.0.1:8080/ping
+```
+
+预期 HTTP 200 和 `pong`。
+
+### Gate B：BarkMac 注册
+
+配置自建 Server URL，完成 macOS 通知权限、设备注册和 SSE 连接。Device Key 只保存在本机和手机配置中，不写入 Git。
+
+### Gate C：Server → BarkMac
+
+使用测试 payload 调用 `POST /push`，预期 BarkMac 记录页出现测试消息。
+
+### Gate D：HarmonyOS → Bark Server
+
+在手机配置 Server URL 和 Device Key，点击“发送 Bark 测试通知”。预期 Hilog 出现 `[BARK_PUSH_SUCCESS]`，BarkMac 出现 `Harmony OTP Test`。
+
+### Gate E：NotificationExtractor
+
+用真实通知确认字段路径：
+
+```text
+NotificationInfo.content.title
+NotificationInfo.content.text
+NotificationInfo.bundleName
+```
+
+实现中不得长期打印完整 `NotificationInfo`。
+
+### Gate F：OtpParser
+
+独立测试必须覆盖：
+
+- 中文关键词和 4–8 位验证码
+- `OTP`、`verification code` 等英文关键词
+- 关键词附近数字优先
+- 多数字正文拒绝误判
+- 订单号、金额、时间、手机号等反例
+- 来源标题和 `【来源】` 回退
+
+### Gate G：真实短信端到端
+
+1. BarkMac 保持运行并连接 SSE。
+2. 手机保持通知订阅状态。
+3. App 可在前台、后台和锁屏状态分别测试。
+4. 发送真实验证码短信。
+5. 只检查脱敏 Hilog 和 BarkMac 通知，不把真实验证码写入文档或日志。
+
+只有手机收到短信、正文可见、Parser 提取成功、HTTP 返回 2xx 且 BarkMac 自动显示四项同时满足时，Phase 0.3 才能标记 PASS。

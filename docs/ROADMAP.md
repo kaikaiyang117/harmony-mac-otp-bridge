@@ -1,54 +1,63 @@
 # Roadmap
 
+当前已知问题、能力边界和未验证项统一记录在 [`CURRENT_LIMITATIONS.md`](./CURRENT_LIMITATIONS.md)。
+
 ## Phase 0：Feasibility POC
 
 ### P0.1 HarmonyOS 通知订阅
 
-- [ ] 创建 API 22 Stage 工程
-- [ ] 配置 `NotificationSubscriberExtensionAbility`
-- [ ] 配置 `SUBSCRIBE_NOTIFICATION`
-- [ ] 完成自动签名/ACL
-- [ ] 拉起订阅授权页
-- [ ] 打印普通通知结构
-- [ ] 打印“信息”通知结构
-- [ ] 验证验证码正文
+- [x] 创建 API 22 Stage 工程
+- [x] 配置 `NotificationSubscriberExtensionAbility`
+- [x] 配置 `SUBSCRIBE_NOTIFICATION`
+- [x] 完成自动签名/ACL
+- [x] 拉起订阅授权页
+- [x] 打印并确认真实通知结构
+- [x] 验证普通通知正文
 
-Exit Criteria：验证码正文可获取。
+Exit Criteria：通知订阅扩展可稳定收到真实通知。
 
-### P0.2 RFCOMM
+### P0.2 蓝牙-backed notification subscription
 
-- [ ] Mac 发布 SDP service
-- [ ] Mac 监听 RFCOMM channel open
-- [ ] 手机 SPP connect
-- [ ] 手机发送 Hello
-- [ ] 100 条稳定性测试
-- [ ] 断开重连测试
+- [x] ACCESS_BLUETOOTH runtime permission
+- [x] Enumerate paired devices
+- [x] Subscribe the paired MacBook address
+- [x] Verify ordinary NotificationInfo callback
+- [x] Verify SMS notification body
 
-Exit Criteria：100 条完整接收且可恢复断链。
+Exit Criteria：真实短信通知正文可读取。
 
-### P0.3 E2E
+### P0.3 OTP → Bark → BarkMac
 
-- [ ] NotificationNormalizer
-- [ ] 简单 OTP Detector
-- [ ] JSON Lines
-- [ ] Mac JSON Decoder
-- [ ] Clipboard
-- [ ] User Notification
+- [x] NotificationExtractor
+- [x] OTP Parser and independent test cases
+- [x] Preferences configuration
+- [x] Bark HTTP push service
+- [x] Self-hosted bark-server
+- [x] BarkMac registration and SSE
+- [x] HarmonyOS Bark test push
+- [x] Real SMS end-to-end test (foreground)
+- [x] Background and lock-screen matrix
 
-Exit Criteria：真实短信到 Mac 自动复制。
+Exit Criteria：真实短信到 Mac 自动显示验证码。
 
-## Phase 1：MVP
+## Phase 1：Daily-use stabilization
 
-- [ ] HarmonyOS 状态首页
+- [x] HarmonyOS 状态首页
 - [ ] 目标设备绑定
 - [ ] 来源 App 白名单
 - [ ] OTP 高置信度识别
-- [ ] 去重
+- [x] 去重
 - [ ] 发送队列
-- [ ] Mac Menu Bar App
-- [ ] 自动复制开关
+- [ ] BarkMac 常驻与登录启动验证
+- [ ] 自动复制能力评估
 - [ ] 最近 10 条内存历史
-- [ ] 脱敏日志
+- [ ] 完整脱敏日志（当前仍可能记录通知标题和蓝牙元数据）
+
+## Future：Native receiver / Bluetooth transport
+
+- [ ] Native macOS receiver
+- [ ] Bluetooth RFCOMM transport
+- [ ] Clipboard integration
 
 ## Phase 2：稳定性
 
@@ -71,7 +80,6 @@ Exit Criteria：真实短信到 Mac 自动复制。
 ## Phase 4：体验优化
 
 - [ ] BLE transport 评估
-- [ ] Mac 登录启动
 - [ ] 来源图标
 - [ ] 快捷键显示最近 OTP
 - [ ] Universal link / browser helper 评估

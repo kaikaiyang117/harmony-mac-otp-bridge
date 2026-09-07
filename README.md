@@ -1,41 +1,41 @@
 # Harmony Mac OTP Bridge
 
-将 HarmonyOS 6 手机收到的验证码通知，安全、低延迟地转发到 macOS，并自动提供复制/粘贴体验。
+将 HarmonyOS 6 手机收到的验证码通知，在手机本地提取验证码后通过自建 Bark Server 转发到 macOS BarkMac。
 
-> 当前状态：**设计与 POC 阶段**。仓库首先验证 HarmonyOS 6 API 22+ 的通知订阅扩展能力能否稳定取得“信息”应用通知正文，再验证 Bluetooth Classic SPP/RFCOMM 到 macOS 的链路。只有这两个 P0 条件通过后，才进入完整产品实现。
+> 当前状态：**Phase 0.3 / PASS**。前台、后台和锁屏真实短信均已完成 OTP 提取并推送到 BarkMac。
 
 ## 目标体验
 
 ```text
-HarmonyOS 6 手机收到验证码短信
-        ↓
-系统「信息」发布通知
+HarmonyOS 6 手机收到验证码通知
         ↓
 NotificationSubscriberExtensionAbility
         ↓
-本地提取 OTP（不上传云端）
+NotificationExtractor
         ↓
-Bluetooth Classic SPP / RFCOMM
+OtpParser
         ↓
-macOS 菜单栏 App
+HTTP POST /push
         ↓
-系统通知 + 自动复制验证码
+Bark Server（自建）
         ↓
-⌘V
+BarkMac
+        ↓
+macOS 系统通知
 ```
 
 ## 为什么不直接读取短信
 
-本项目不把“读取短信数据库”作为主路线。HarmonyOS 6 对短信等敏感数据访问限制较强，而 API 22+ 提供了官方的通知订阅扩展能力：第三方配套应用可以在获得用户授权后接收本机通知，并通过 BLE 或传统蓝牙同步到另一设备。
+本项目不把“读取短信数据库”作为主路线。HarmonyOS 6 对短信等敏感数据访问限制较强，而 API 22+ 提供了通知订阅扩展能力：应用在获得授权后读取本机通知，再在手机本地提取验证码。
 
-因此主路线是：**读取系统通知，而不是读取短信数据库。**
+因此主路线是：**读取系统通知，而不是读取短信数据库；通过 HTTP 推送，而不是用蓝牙传输 OTP。**
 
 ## 技术栈
 
-- HarmonyOS 端：ArkTS、Stage 模型、Notification Kit、Connectivity Kit / Bluetooth SPP
-- macOS 端：Swift、AppKit / SwiftUI、IOBluetooth、UserNotifications、NSPasteboard
-- 传输：Bluetooth Classic RFCOMM / SPP
-- 协议：UTF-8 JSON Lines，后续可升级为长度前缀协议
+- HarmonyOS 端：ArkTS、Stage 模型、Notification Kit、Connectivity Kit、NetworkKit、Preferences
+- macOS 端：现成的 `htnanako/bark-macOS` BarkMac
+- 服务端：自建 `htnanako/bark-server`
+- 传输：HTTP JSON `POST /push`；BarkMac 使用 `macos_sse`
 
 ## 核心前置条件
 
@@ -44,43 +44,20 @@ macOS 菜单栏 App
 3. HarmonyOS 应用能获得 `ohos.permission.SUBSCRIBE_NOTIFICATION`。
 4. 用户在系统弹窗中授权“允许获取本机通知”。
 5. 「信息」应用通知回调中能看到验证码正文，而不是被隐私策略完全脱敏。
-6. Mac 与手机已完成蓝牙配对，并能建立 RFCOMM/SPP 链路。
+6. 手机与 Bark Server 位于可互通的局域网。
+7. Mac 上 BarkMac 已注册并连接自建 Bark Server。
 
-## P0 验证顺序
+## Phase 0.3 Gate 顺序
 
-不要先做完整 App。按以下顺序执行：
+1. Bark Server `/ping`
+2. BarkMac 注册与 SSE 连接
+3. `curl /push` → BarkMac
+4. HarmonyOS “发送 Bark 测试通知” → BarkMac
+5. 真实通知回调字段验证
+6. OTP Parser 单元测试
+7. 真实短信 → OTP → Bark → BarkMac
 
-### P0-1：通知正文验证
-
-HarmonyOS 端仅实现：
-
-```ts
-onReceiveMessage(info) {
-  console.info(JSON.stringify(info));
-}
-```
-
-给手机发送一条测试验证码短信，确认日志中出现验证码内容。
-
-通过标准：能从 `NotificationInfo` 中稳定提取验证码正文。
-
-### P0-2：蓝牙链路验证
-
-macOS 建立 RFCOMM 服务端，HarmonyOS 建立 SPP 客户端，只发送：
-
-```text
-hello-from-harmony\n
-```
-
-通过标准：Mac 连续接收 100 次消息无断链、乱序或截断。
-
-### P0-3：端到端验证
-
-```text
-短信通知 → OTP 提取 → SPP → Mac → 剪贴板
-```
-
-通过标准：手机收到验证码后，Mac 在 2 秒内出现通知并完成复制。
+只有最后一项完成，Phase 0.3 才能标记 PASS。
 
 ## 仓库结构
 
@@ -96,6 +73,9 @@ hello-from-harmony\n
 │   ├── PERMISSIONS_AND_SIGNING.md
 │   ├── TEST_PLAN.md
 │   ├── ROADMAP.md
+│   ├── BARK_SETUP.md
+│   ├── PHASE_0_3_RESULT.md
+│   ├── CURRENT_LIMITATIONS.md
 │   └── SOURCE_RESEARCH.md
 ├── harmony-app/
 │   └── README.md
@@ -109,10 +89,10 @@ hello-from-harmony\n
 
 - 默认只在本地处理验证码。
 - 不把完整短信内容发送到云端。
-- 蓝牙包中优先只发送提取后的 OTP 与最少元数据。
-- Mac 端验证码默认仅短期保留。
-- 日志默认脱敏，不记录完整 OTP。
-- 自动复制可关闭。
+- 只向自建 Bark Server 发送来源和提取后的 OTP，不发送完整短信正文。
+- Preferences 只保存 Server URL、Device Key 和启用开关，不保存 OTP。
+- 已移除完整 `NotificationInfo`、短信正文和 Device Key 日志；通知标题与蓝牙元数据仍需进一步脱敏，详见 `docs/CURRENT_LIMITATIONS.md`。
+- HTTP 明文只适合可信局域网；不应在不可信公共 Wi-Fi 长期使用。
 - 后续版本应增加设备绑定、消息签名和重放保护。
 
 ## 开发文档
@@ -122,26 +102,32 @@ hello-from-harmony\n
 1. `docs/ARCHITECTURE.md`
 2. `docs/PERMISSIONS_AND_SIGNING.md`
 3. `docs/HARMONYOS_IMPLEMENTATION.md`
-4. `docs/MACOS_IMPLEMENTATION.md`
-5. `docs/PROTOCOL.md`
-6. `docs/TEST_PLAN.md`
-7. `docs/ROADMAP.md`
+4. `docs/BARK_SETUP.md`
+5. `docs/TEST_PLAN.md`
+6. `docs/PHASE_0_3_RESULT.md`
+7. `docs/CURRENT_LIMITATIONS.md`
+8. `docs/ROADMAP.md`
 
 ## 当前结论
 
-这条路线的传输部分有明确系统 API 支撑。当前最大的技术风险不是 Bluetooth，而是 HarmonyOS 的通知订阅 ACL、使用场景约束以及“信息”通知正文是否完整暴露给订阅扩展。因此本仓库把通知正文 POC 放在所有功能开发之前。
+Phase 0.2 已在 HUAWEI Mate 60 Pro 真机完成通知授权、蓝牙设备枚举、Mac 订阅和普通通知回调验证。Phase 0.3 已完成 Bark Server、BarkMac、HarmonyOS 测试推送，以及前台、后台和锁屏真实短信到 Mac 的端到端验证。
 
-## Phase 0.1 当前实现
+## Phase 0.3 当前实现
 
-本阶段提供一个 API 22 / Stage 模型的最小 HarmonyOS 工程，包含：
+当前 HarmonyOS 工程包含：
 
 - `ohos.permission.SUBSCRIBE_NOTIFICATION` 权限声明
-- 通知订阅授权页跳转和授权状态检查
+- `ohos.permission.ACCESS_BLUETOOTH` 和 `ohos.permission.INTERNET`
+- 通知订阅授权、蓝牙设备枚举和目标设备订阅
 - `NotificationSubscriberExtensionAbility` 扩展注册
-- `onReceiveMessage()` 中的完整 `NotificationInfo` 日志输出
+- 基于真实 API 22 字段的 `NotificationExtractor`
+- 关键词优先、4–8 位数字的 `OtpParser`
+- Preferences 配置和 `BarkPushService`
+- 状态优先的首页、验证码转发开关和按需展开的 Bark 配置
+- 合并后的“保存并测试”配置动作
 
-运行前提：DevEco Studio 6.0.2 Release 或更高版本、HarmonyOS 6.0.2(22) SDK，以及 Phone 或 Tablet 真机/模拟器。
+蓝牙在本阶段只用于激活 HarmonyOS 通知订阅能力，不作为 OTP 数据通道。
 
-Phase 0.1 已在 HUAWEI Mate 60 Pro 真机验证：签名安装成功、应用启动成功、通知订阅授权成功，Hilog 输出 `Notification subscription granted: true`，扩展注册和 `SUBSCRIBE_NOTIFICATION` 权限均可在设备包信息中确认。
+## Native macOS receiver
 
-API 22 的 `notificationExtensionSubscription.subscribe()` 需要真实蓝牙设备地址，因此本阶段不伪造地址、不加入蓝牙权限和 Mac 通信。真实 `NotificationInfo` 回调验证将在下一阶段接入蓝牙订阅后进行。
+`macos-app/` 保留为未来可选方案，当前状态为 **Deferred**。MVP 使用 `htnanako/bark-macOS`，只有在需要剪贴板集成、离线本地传输或 RFCOMM 时再评估自研 macOS receiver。

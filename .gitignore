@@ -23,6 +23,7 @@ oh_modules/
 secrets.*
 .env
 .env.*
+bark.local.json
 
 # Logs
 *.log
