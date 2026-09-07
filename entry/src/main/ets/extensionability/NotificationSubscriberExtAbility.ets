@@ -6,7 +6,14 @@ const TAG = 'HarmonyOtpBridge';
 
 export default class NotificationSubscriberExtAbility extends NotificationSubscriberExtensionAbility {
   onReceiveMessage(notificationInfo: notificationExtensionSubscription.NotificationInfo): void {
-    hilog.info(DOMAIN, TAG, 'NotificationInfo received: %{public}s', JSON.stringify(notificationInfo));
+    // POC ONLY: remove full notification logging after the NotificationInfo structure is confirmed.
+    // OTP content must not be persisted in production logs.
+    hilog.info(
+      DOMAIN,
+      TAG,
+      '[NOTIFICATION_RECEIVED] %{public}s',
+      JSON.stringify(notificationInfo)
+    );
   }
 
   onCancelMessages(hashCodes: Array<string>): void {
@@ -17,4 +24,3 @@ export default class NotificationSubscriberExtAbility extends NotificationSubscr
     hilog.info(DOMAIN, TAG, 'Notification subscriber destroyed');
   }
 }
-

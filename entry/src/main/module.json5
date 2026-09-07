@@ -44,6 +44,16 @@
     "requestPermissions": [
       {
         "name": "ohos.permission.SUBSCRIBE_NOTIFICATION"
+      },
+      {
+        "name": "ohos.permission.ACCESS_BLUETOOTH",
+        "reason": "$string:access_bluetooth_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility"
+          ],
+          "when": "inuse"
+        }
       }
     ]
   }

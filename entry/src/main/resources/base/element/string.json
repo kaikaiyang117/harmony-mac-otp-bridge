@@ -19,6 +19,10 @@
     {
       "name": "NotificationSubscriberExtAbility_label",
       "value": "Harmony Mac OTP Bridge Notification Subscriber"
+    },
+    {
+      "name": "access_bluetooth_reason",
+      "value": "读取已配对蓝牙设备，用于通知订阅验证"
     }
   ]
 }
