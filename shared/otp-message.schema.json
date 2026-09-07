@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/harmony-otp-message.schema.json",
+  "title": "Harmony OTP Message",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "type", "id", "timestampMs", "code"],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "type": {
+      "const": "otp"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestampMs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[0-9]{4,8}$"
+    },
+    "sender": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "sourceBundle": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "expiresInSec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600
+    }
+  }
+}
