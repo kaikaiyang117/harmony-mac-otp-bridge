@@ -1,0 +1,8 @@
+{
+  "modelVersion": "6.0.1",
+  "name": "harmony-mac-otp-bridge",
+  "version": "1.0.0",
+  "description": "Minimal HarmonyOS API 22 notification subscriber gate.",
+  "dependencies": {},
+  "devDependencies": {}
+}

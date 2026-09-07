@@ -1,0 +1,24 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "HarmonyOS notification subscriber gate"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "Main ability for notification subscription"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "Harmony Mac OTP Bridge"
+    },
+    {
+      "name": "NotificationSubscriberExtAbility_desc",
+      "value": "Receives notification subscription callbacks"
+    },
+    {
+      "name": "NotificationSubscriberExtAbility_label",
+      "value": "Harmony Mac OTP Bridge Notification Subscriber"
+    }
+  ]
+}

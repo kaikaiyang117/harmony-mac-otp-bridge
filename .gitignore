@@ -1,0 +1,11 @@
+.DS_Store
+.idea/
+.hvigor/
+.preview/
+build/
+entry/build/
+oh_modules/
+*.hap
+*.app
+*.log
+
